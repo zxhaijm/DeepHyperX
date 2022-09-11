@@ -184,7 +184,7 @@ def get_model(name, **kwargs):
     elif name == "RCNN_UNet":
         kwargs.setdefault("batch_size", 1)
         kwargs.setdefault("patch_size", 256)
-        kwargs.setdefault("epoch", 20)
+        kwargs.setdefault("epoch", 200)
         lr = kwargs.setdefault("lr", 0.00001)
         model = RCNN_UNetEtAl(n_bands, n_classes)
         model = model.to(device)
@@ -1175,7 +1175,7 @@ class RCNN_UNetEtAl(nn.Module):
         x = self.ReLU(x)
         x = self.conv2(x) + x7
         x = self.conv9(x)
-        # x = self.sigmoid(x)
+        x = self.sigmoid(x)
         return x
 
 
