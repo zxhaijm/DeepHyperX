@@ -182,10 +182,10 @@ def get_model(name, **kwargs):
         optimizer = optim.Adadelta(model.parameters(), lr=lr)
         criterion = nn.CrossEntropyLoss(weight=kwargs["weights"])
     elif name == "RCNN_UNet":
-        kwargs.setdefault("batch_size", 1)
-        kwargs.setdefault("patch_size", 256)
+        kwargs.setdefault("batch_size", 16)
+        kwargs.setdefault("patch_size", 32)
         kwargs.setdefault("epoch", 200)
-        lr = kwargs.setdefault("lr", 0.00001)
+        lr = kwargs.setdefault("lr", 0.0001)
         model = RCNN_UNetEtAl(n_bands, n_classes)
         model = model.to(device)
         optimizer = optim.SGD(model.parameters(), lr=lr)
@@ -1014,7 +1014,7 @@ class RCNN_UNetEtAl(nn.Module):
             init.kaiming_uniform_(m.weight)
             init.zeros_(m.bias)
 
-    def __init__(self, input_channels, n_classes, patch_size=32):
+    def __init__(self, input_channels, n_classes):
         super(RCNN_UNetEtAl, self).__init__()
         self.ReLU = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
@@ -1027,12 +1027,12 @@ class RCNN_UNetEtAl(nn.Module):
         self.upsamping2 = nn.ConvTranspose2d(256, 128, (2,2), 2)
         self.upsamping3 = nn.ConvTranspose2d(128, 64, (2,2), 2)
         # self.conv_3x3 = nn.Conv3d(
-        #     1, 103, (input_channels, 3, 3), stride=(1, 1, 1), padding=(0, 1, 1)
+        #     1, 128, (input_channels, 3, 3), stride=(1, 1, 1), padding=(0, 1, 1)
         # )
         # self.conv_1x1 = nn.Conv3d(
-        #     1, 103, (input_channels, 1, 1), stride=(1, 1, 1), padding=0
+        #     1, 128, (input_channels, 1, 1), stride=(1, 1, 1), padding=0
         # )
-        self.conv0 = nn.Conv2d(103, 3, (3,3), 1, 1)
+        self.conv0 = nn.Conv2d(input_channels, 3, (3,3), 1, 1)
         self.conv1 = nn.Conv2d(3, 64, (3,3), 1, 1)
         self.conv2 = nn.Conv2d(64, 64, (3, 3), 1, 1)
         self.conv3 = nn.Conv2d(64, 128, (3, 3), 1, 1)
@@ -1047,6 +1047,7 @@ class RCNN_UNetEtAl(nn.Module):
         self.conv12 = nn.Conv2d(128, 64, (3,3), 1, 1)
         # self.conv10 = nn.Conv2d(input_channels)
         self.pool = nn.MaxPool2d((2,2), 2)
+        self.apply(self.weight_init)
 
     def forward(self, x):
         # Inception module
@@ -1055,7 +1056,11 @@ class RCNN_UNetEtAl(nn.Module):
         # print(x.shape)
         # x = self.conv_3x3(x)
         # print(x.shape)
-        x = torch.squeeze(x,1)  # [103,256,256]
+        # x_3x3 = self.conv_3x3(x)
+        # x_1x1 = self.conv_1x1(x)
+        # x = torch.cat([x_3x3, x_1x1], dim=1)
+        x = torch.squeeze(x)  # [103,256,256]
+        # print(x.shape)
         # x = x.squeeze(-3)
         x  = self.conv0(x)
         x1 = self.conv1(x)  # 64
